@@ -26,7 +26,7 @@
 </section>
 <section class="card"><h2>5. Export video</h2><p class="hint">Record the animated canvas as a WebM video. If audio is selected, the browser will include it in the recording where supported. Export happens on your phone; longer reels may take more memory.</p>
 <button id="export">● Record & export WebM</button><button class="secondary" id="stopExport" disabled>Stop recording</button>
-<p class="small">MP4 conversion is not included yet; WebM is the free browser-native export format.</p></section>
+<p class="small">MP4 is exported only if your browser supports MP4 recording; otherwise this automatically exports WebM. No paid converter is used.</p></section>
 <p class="status" id="status">Ready · No paid API · No account required for local preview.</p>
 </main>
 <script>
@@ -122,10 +122,12 @@ $('export').onclick=async()=>{
    if(!audioSource){audioSource=audioCtx.createMediaElementSource(audioEl);audioDest=audioCtx.createMediaStreamDestination();audioSource.connect(audioDest);audioSource.connect(audioCtx.destination)}
    audioDest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
   }
-  const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+  const candidates=['video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mime=candidates.find(x=>MediaRecorder.isTypeSupported(x));
   recorder=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:2500000}:undefined);
+  const exportExt=(recorder.mimeType||mime||'video/webm').includes('mp4')?'mp4':'webm';
   recorder.ondataavailable=e=>{if(e.data.size)recorded.push(e.data)};
-  recorder.onstop=()=>{const blob=new Blob(recorded,{type:recorder.mimeType||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='animation-reel.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);stream.getTracks().forEach(t=>t.stop());$('status').textContent='Video exported. Check your Downloads folder.';$('export').disabled=false;$('stopExport').disabled=true};
+  recorder.onstop=()=>{const blob=new Blob(recorded,{type:recorder.mimeType||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='animation-reel.'+exportExt;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);stream.getTracks().forEach(t=>t.stop());$('status').textContent='Video exported as '+exportExt.toUpperCase()+'. Check your Downloads folder.';$('export').disabled=false;$('stopExport').disabled=true};
   recorder.start(500);$('export').disabled=true;$('stopExport').disabled=false;$('status').textContent='Recording preview… keep this tab open.';
   if(audioUrl){audioEl.currentTime=0;audioEl.play().catch(()=>{})}
   const total=scenesData.length*4000,start=performance.now();
