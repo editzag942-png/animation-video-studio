@@ -25,11 +25,23 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);
-function splitScenes(s){return s.split(/(?<=[.!?।])\s+|\n+/).map(x=>x.trim()).filter(Boolean)}
-function build(){const title=$('title').value.trim()||'Untitled Reel',script=$('script').value.trim(),style=$('style').value,chars=$('characters').value.trim();if(!script){$('status').textContent='Please paste your script first.';return}
-const parts=splitScenes(script);const scenes=parts.map((line,i)=>'SCENE '+(i+1)+'\nDialogue/Action: '+line+'\nVisual: Show the action clearly; maintain character design.\nCamera: Medium shot, then a gentle cinematic move.\nAudio: Sync this scene to the matching dialogue.').join('\n\n');
-const prompt='Create a '+style+' animated reel titled "'+title+'", in '+$('ratio').value+'.\nCHARACTER CONTINUITY: '+(chars||'Use the same character design throughout.')+'\n\nSCRIPT:\n'+script+'\n\nDIRECTION: Keep faces, clothes, colors and proportions consistent across every scene. Use expressive but readable acting, clear staging, smooth camera movement, dialogue-synced mouth movement, and clean scene transitions. Do not add extra characters or change the dialogue.';
-$('scenes').textContent=scenes;$('prompt').textContent=prompt;$('previewText').textContent=title;$('status').textContent='Scene plan created for '+parts.length+' scene(s).'}
+function parseScenes(s){
+ const text=s.trim();
+ const re=/(?:^|\\n|\\s)(Scene\\s+(\\d+)\\s*(?:\\(([^)]*)\\))?\\s*:\\s*)/gi;
+ const hits=[...text.matchAll(re)];
+ if(hits.length){
+  return hits.map((m,i)=>({number:Number(m[2]),timing:(m[3]||"").trim(),action:text.slice(m.index+m[0].length,i+1<hits.length?hits[i+1].index:text.length).trim().replace(/^[:\\s-]+/,"")})).filter(x=>x.action);
+ }
+ return text.split(/\\n\\s*\\n|(?<=[.!?।])\\s+/).map(x=>x.trim()).filter(Boolean).map((action,i)=>({number:i+1,timing:"",action}));
+}
+function build(){
+ const title=$('title').value.trim()||'Untitled Reel',script=$('script').value.trim(),style=$('style').value,chars=$('characters').value.trim();
+ if(!script){$('status').textContent='Please paste your script first.';return}
+ const parts=parseScenes(script);
+ const scenes=parts.map(scene=>'SCENE '+scene.number+(scene.timing?'\\nTiming: '+scene.timing:'')+'\\nDialogue/Action: '+scene.action+'\\nVisual: Show this scene action clearly; preserve character design and setting.\\nCamera: Choose a clear shot matched to the action, with gentle cinematic movement.\\nAudio: Keep the original dialogue in this scene and align it to its matching audio segment.').join('\\n\\n');
+ const prompt='Create a '+style+' animated reel titled "'+title+'", in '+$('ratio').value+'.\\nCHARACTER CONTINUITY: '+(chars||'Use the same character design throughout.')+'\\n\\nSCENE-BY-SCENE PLAN:\\n'+scenes+'\\n\\nDIRECTION: Preserve exact scene order and dialogue. Keep faces, clothes, colors and proportions consistent. Use expressive acting, clear staging, smooth camera movement, dialogue-synced mouth movement and clean transitions. Do not add characters or rewrite dialogue.';
+ $('scenes').textContent=scenes;$('prompt').textContent=prompt;$('previewText').textContent=title;$('status').textContent='Scene plan created for '+parts.length+' scene(s). Scene headings and dialogue order preserved.';
+}
 $('build').onclick=build;
 async function copyText(id){try{await navigator.clipboard.writeText($(id).textContent);$('status').textContent='Copied.'}catch(e){$('status').textContent='Copy unavailable; select the text manually.'}}
 $('copy').onclick=()=>copyText('scenes');$('copyPrompt').onclick=()=>copyText('prompt');
