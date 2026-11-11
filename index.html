@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101018"><title>Animation Video Studio</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{color-scheme:dark;--bg:#101018;--panel:#1a1a26;--line:#303044;--muted:#a7a7b8;--accent:#9b8cff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f5f4ff;font:15px system-ui,Arial}header{padding:22px 16px;border-bottom:1px solid var(--line);background:#151520}header h1{font-size:22px;margin:0 0 5px}header p{margin:0;color:var(--muted)}main{max-width:850px;margin:auto;padding:16px;display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}.card h2{font-size:17px;margin:0 0 12px}label{display:block;color:#d8d7e6;margin:12px 0 6px}input,textarea,select{width:100%;background:#101018;color:#fff;border:1px solid #414157;border-radius:10px;padding:11px;font:inherit}textarea{min-height:110px;resize:vertical}button{border:0;border-radius:10px;background:var(--accent);color:#100e20;padding:12px 15px;font-weight:700;font-size:14px;margin:8px 6px 0 0}button.secondary{background:#303044;color:#fff}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hint{font-size:12px;color:var(--muted);line-height:1.5}.output{white-space:pre-wrap;background:#101018;border:1px solid var(--line);padding:12px;border-radius:10px;min-height:70px;overflow-wrap:anywhere}.preview{width:min(100%,280px);aspect-ratio:9/16;margin:10px auto;background:linear-gradient(145deg,#29213f,#12121b);border:5px solid #39364c;border-radius:18px;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:#fff}.preview strong{font-size:22px}.status{color:#bfb3ff;font-size:13px}@media(max-width:560px){.row{grid-template-columns:1fr}}
+</style></head>
+<body><header><h1>🎬 Animation Video Studio</h1><p>Free, mobile-friendly reel planning workspace · No paid API</p></header>
+<main>
+<section class="card"><h2>1. Your reel idea</h2>
+<label for="title">Reel title</label><input id="title" placeholder="e.g. A funny animated story">
+<label for="script">Script / dialogue</label><textarea id="script" placeholder="Paste your complete script here..."></textarea>
+<div class="row"><div><label for="style">Animation style</label><select id="style"><option>3D cartoon cinematic</option><option>2D comic animation</option><option>Original stylized 3D look</option><option>Paper-cut animation</option><option>Motion graphics</option></select></div><div><label for="ratio">Video format</label><select id="ratio"><option>9:16 vertical Reel</option><option>16:9 landscape</option><option>1:1 square</option></select></div></div>
+<label for="characters">Character descriptions (keep consistent)</label><textarea id="characters" placeholder="Describe each character's appearance, clothes and personality..."></textarea>
+<label for="audio">Reference audio (optional)</label><input id="audio" type="file" accept="audio/*"><p class="hint">This starter version does not upload your audio or automatically render an MP4.</p>
+<button id="build">Generate scene plan</button><button class="secondary" id="save">Save project JSON</button>
+</section>
+<section class="card"><h2>2. Scene plan</h2><div id="scenes" class="output">Your scene breakdown will appear here.</div><button class="secondary" id="copy">Copy scene plan</button></section>
+<section class="card"><h2>3. Animation prompt</h2><div id="prompt" class="output">Build a scene plan first.</div><button class="secondary" id="copyPrompt">Copy prompt</button></section>
+<section class="card"><h2>4. Vertical preview</h2><div class="preview"><strong id="previewText">Your reel title appears here</strong></div><p class="hint">Preview layout only. Video generation/rendering is not included in this free starter build.</p></section>
+<p class="status" id="status">Ready · Works locally in your browser.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function splitScenes(s){return s.split(/(?<=[.!?।])\s+|\n+/).map(x=>x.trim()).filter(Boolean)}
+function build(){const title=$('title').value.trim()||'Untitled Reel',script=$('script').value.trim(),style=$('style').value,chars=$('characters').value.trim();if(!script){$('status').textContent='Please paste your script first.';return}
+const parts=splitScenes(script);const scenes=parts.map((line,i)=>'SCENE '+(i+1)+'\nDialogue/Action: '+line+'\nVisual: Show the action clearly; maintain character design.\nCamera: Medium shot, then a gentle cinematic move.\nAudio: Sync this scene to the matching dialogue.').join('\n\n');
+const prompt='Create a '+style+' animated reel titled "'+title+'", in '+$('ratio').value+'.\nCHARACTER CONTINUITY: '+(chars||'Use the same character design throughout.')+'\n\nSCRIPT:\n'+script+'\n\nDIRECTION: Keep faces, clothes, colors and proportions consistent across every scene. Use expressive but readable acting, clear staging, smooth camera movement, dialogue-synced mouth movement, and clean scene transitions. Do not add extra characters or change the dialogue.';
+$('scenes').textContent=scenes;$('prompt').textContent=prompt;$('previewText').textContent=title;$('status').textContent='Scene plan created for '+parts.length+' scene(s).'}
+$('build').onclick=build;
+async function copyText(id){try{await navigator.clipboard.writeText($(id).textContent);$('status').textContent='Copied.'}catch(e){$('status').textContent='Copy unavailable; select the text manually.'}}
+$('copy').onclick=()=>copyText('scenes');$('copyPrompt').onclick=()=>copyText('prompt');
+$('save').onclick=()=>{const data={title:$('title').value,script:$('script').value,style:$('style').value,ratio:$('ratio').value,characters:$('characters').value,scenePlan:$('scenes').textContent,prompt:$('prompt').textContent};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='reel-project.json';a.click();URL.revokeObjectURL(a.href);$('status').textContent='Project JSON downloaded.'};
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script></body></html>

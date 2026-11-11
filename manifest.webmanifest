@@ -1,0 +1,9 @@
+{
+  "name": "Animation Video Studio",
+  "short_name": "Reel Studio",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#101018",
+  "theme_color": "#101018",
+  "description": "Free mobile-friendly reel planning workspace"
+}
